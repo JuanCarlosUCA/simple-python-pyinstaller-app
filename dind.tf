@@ -6,38 +6,70 @@ terraform {
         }   
     }
 }
-# Crear una red de Docker para que los contenedores se comuniquen entre sí
-resource "docker_network" "dind_network" {
-  name = "dind_network"
+
+resource "docker_network" "jenkins" {
+  name = "jenkins"
 }
 
 # Crear el contenedor Docker-in-Docker
 resource "docker_container" "dind" {
   name  = "docker-in-docker"
-  image = "docker:19.03.12-dind"  # Imagen oficial de Docker-in-Docker
+  image = "docker:19.03.12-dind" 
   restart = "unless-stopped"
-  privileged = true  # Necesario para ejecutar Docker dentro de Docker
-
-  # Conexión a la red Docker
+  privileged = true  
+  
   networks_advanced {
-    name = docker_network.dind_network.name
+    name = docker_network.jenkins.name
+    aliases = ["docker"]
+    }
+
+  env = [
+    "DOCKER_TLS_CERTDIR=/certs"  # Habilita TLS dentro del contenedor
+  ]
+
+
+  volumes {
+    volume_name = docker_volume.jenkins_docker_certs.name
+    container_path = "/certs/client"
   }
+  
+  volumes {
+    volume_name = docker_volume.jenkins_data.name
+    container_path = "/var/jenkins_home"
+  }
+
     ports {
-    internal = 80
-    external = 8000
+    internal = 2376
+    external = 2376
   }
+
+ command = [
+  "--storage-driver",
+  "overlay2"
+]
 
 }
 
-resource "docker_container" "dind_client" {
-  name  = "dind-client"
-  image = "docker:19.03.12"
-  restart = "unless-stopped"
+# Definir los volúmenes del contenedor
+resource "docker_volume" "jenkins_docker_certs" {
+  name = "jenkins-docker-certs"
+}
 
-  networks_advanced {
-    name = docker_network.dind_network.name
+resource "docker_volume" "jenkins_data" {
+  name = "jenkins-data"
+}
+
+# Crear el contenedor de Jenkins
+resource "docker_container" "jenkins" {
+  name  = "jenkins"
+  image = "jenkins/jenkins:lts" 
+  restart = "unless-stopped"     
+  privileged = false              
+
+  # Configuración de puertos
+  ports {
+    internal = 8080  # Puerto de Jenkins
+    external = 8081  # Exponer el puerto 8081 en el host
   }
 
-  # Conectarse al contenedor Docker-in-Docker
-  command = "docker --host tcp://dind:8000 ps"  # Este contenedor ejecuta comandos Docker contra el contenedor DIND
 }
