@@ -7,7 +7,9 @@ terraform {
     }
 }
 
-provider "docker"{}
+provider "docker"{
+  host = "npipe:////.//pipe//docker_engine"
+}
 
 resource "docker_network" "jenkins" {
   name = "jenkins"
@@ -26,7 +28,7 @@ resource "docker_volume" "jenkins_data" {
 # Crear el contenedor Docker-in-Docker
 resource "docker_container" "dind" {
   name  = "docker-in-docker"
-  image = "docker:19.03.12-dind" 
+  image = "docker:dind" 
   restart = "unless-stopped"
   privileged = true  
   
@@ -50,7 +52,7 @@ resource "docker_container" "dind" {
     container_path = "/var/jenkins_home"
   }
 
-    ports {
+  ports {
     internal = 2376
     external = 2376
   }
@@ -76,7 +78,7 @@ resource "docker_container" "jenkins_blueocean" {
 
   ports {
     internal = 8080
-    external = 8081
+    external = 8080
   }
 
   ports {
