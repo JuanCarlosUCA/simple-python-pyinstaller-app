@@ -7,9 +7,21 @@ terraform {
     }
 }
 
+provider "docker"{}
+
 resource "docker_network" "jenkins" {
   name = "jenkins"
 }
+
+# Definir los volúmenes del contenedor
+resource "docker_volume" "jenkins_docker_certs" {
+  name = "jenkins-docker-certs"
+}
+
+resource "docker_volume" "jenkins_data" {
+  name = "jenkins-data"
+}
+
 
 # Crear el contenedor Docker-in-Docker
 resource "docker_container" "dind" {
@@ -50,26 +62,43 @@ resource "docker_container" "dind" {
 
 }
 
-# Definir los volúmenes del contenedor
-resource "docker_volume" "jenkins_docker_certs" {
-  name = "jenkins-docker-certs"
-}
-
-resource "docker_volume" "jenkins_data" {
-  name = "jenkins-data"
-}
 
 # Crear el contenedor de Jenkins
-resource "docker_container" "jenkins" {
-  name  = "jenkins"
-  image = "jenkins/jenkins:lts" 
-  restart = "unless-stopped"     
+resource "docker_container" "jenkins_blueocean" {
+  name  = "jenkins-blueocean"
+  image = "myjenkins-blueocean" 
+  restart = "on-failure"
   privileged = false              
 
-  # Configuración de puertos
+  networks_advanced {
+    name = docker_network.jenkins.name
+  }
+
   ports {
-    internal = 8080  # Puerto de Jenkins
-    external = 8081  # Exponer el puerto 8081 en el host
+    internal = 8080
+    external = 8081
+  }
+
+  ports {
+    internal = 50000
+    external = 50000
+  }
+
+  env = [
+    "DOCKER_HOST=tcp://docker:2376",
+    "DOCKER_CERT_PATH=/certs/client",
+    "DOCKER_TLS_VERIFY=1",
+  ]
+
+  volumes {
+    volume_name    = docker_volume.jenkins_data.name
+    container_path = "/var/jenkins_home"
+  }
+
+  volumes {
+    volume_name    = docker_volume.jenkins_docker_certs.name
+    container_path = "/certs/client"
+    read_only      = true
   }
 
 }
