@@ -1,5 +1,5 @@
-ENTREGABLE 3 VIRTUALIZACIÓN DE SISTEMAS
-JUAN CARLOS FERNÁNDEZ PIÑA
+## ENTREGABLE 3 VIRTUALIZACIÓN DE SISTEMAS
+# JUAN CARLOS FERNÁNDEZ PIÑA
 
 1) Copiar (Fork) el repositorio simple-python-pynstaller-app
 
@@ -212,3 +212,12 @@ Abrimos localhost:8080
 cat /var/jenkins_home/secrets/initialAdminPassword
 
 Copiamos la contraseña que nos genera, y podremos abrir la web de Jenkins.
+Creamos un usuario o continuamos con la cuenta de administrador predeterminado.
+
+Seleccionamos "Crear nueva tarea", y se indica que es de tipo Pipeline, escribir un nombre sin espacios.
+
+Pipeline->Definition->Pipeline script from SCM
+SCM->Git->Repository URL=URL de nuestro repositorio con los archivos de configuración
+Branch=directorio en el que estén dichos archivos
+
+Construir ahora ejecutará el script.
